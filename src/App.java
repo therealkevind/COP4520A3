@@ -12,10 +12,10 @@ public class App {
   public static void main(String[] args) {
     switch (args[0]) {
       case "1": {
-        final Random random = new Random();
         final int numPresents = args.length > 1 ? parseInt(args[1]) : 500000,
           threadCount = args.length > 2 ? parseInt(args[2]) : 4;
         final long askInterval = args.length > 3 ? parseLong(args[3]) : 0;
+        final Random random = new Random();
         if (args.length > 4) random.setSeed(parseLong(args[4]));
         final List<ThankYou.Present> presentsList = IntStream.range(0, numPresents)
           .mapToObj(ThankYou.Present::new).collect(Collectors.toCollection(ArrayList::new));

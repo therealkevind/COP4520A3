@@ -5,14 +5,14 @@ public class Rover {
   /**
    * An array treated as 2D, specifically of dimension {@link #numHours} by {@link #numThreads}, in reading order.
    */
-  final AtomicIntegerArray memory;
-  final int numThreads;
-  private final int SENTINEL = Integer.MIN_VALUE;
-  final TemperatureSensor[] sensors;
+  private final AtomicIntegerArray memory;
+  private final int numThreads;
+  private static final int SENTINEL = Integer.MIN_VALUE;
+  private final TemperatureSensor[] sensors;
   private int numHours;
   private long tempInterval, startNanos;
 
-  Rover(TemperatureReader[] tempReaders) {
+  public Rover(TemperatureReader[] tempReaders) {
     numThreads = tempReaders.length;
     memory = new AtomicIntegerArray(60 * numThreads);
     for (int i = 0; i < memory.length(); i++) memory.set(i, SENTINEL);
@@ -38,12 +38,17 @@ public class Rover {
   }
 
   public class TemperatureSensor extends Thread {
-    int threadIndex;
+    /**
+     * Indicates which indices of {@link #memory} this thread writes to.
+     * If {@code 0}, this thread's also in charge of summarization.
+     */
+    final int threadIndex;
+    /** Elapsed time in minutes. */
     int time;
-    TemperatureReader reader;
+    final TemperatureReader reader;
 
-    public TemperatureSensor(int threadId, TemperatureReader reader) {
-      this.threadIndex = threadId;
+    public TemperatureSensor(int threadIndex, TemperatureReader reader) {
+      this.threadIndex = threadIndex;
       this.reader = reader;
     }
 
@@ -83,6 +88,7 @@ public class Rover {
      * Initializes summary variables. Called at minute 0.
      */
     private void initSummary() {
+      // other variables' values are ignored until after they've been written to
       largestDifference = Integer.MIN_VALUE;
     }
     /**

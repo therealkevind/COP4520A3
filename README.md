@@ -67,7 +67,7 @@ Note that with 4 servants and each alternating between adding and removing gifts
 ## Notes about the output
 It's extremely unlikely that, at any point, any particular present will be in the chain; again, it's only at most 4 presents long.
 
-However, I've done a couple things to increase the probability that the Minotaur's question, of whether a gift with a certain tag is in the chain, is answered affirmatively:
+However, I've done a couple things to increase the probability that the Minotaur's question of whether a gift with a certain tag is in the chain is answered affirmatively:
 - The first question is asked at the very beginning, without waiting `askInterval` milliseconds, if asks are enabled.
 - The question is only answered either just after the Servant has added a gift, meaning the chain's at least one present long, or as the thread's completing if some questions got missed.
 
@@ -98,10 +98,10 @@ Before readings begin, the shared memory is entirely initialized to `SENTINEL`, 
 
 Every simulated minute (where `minute` is from `0` to `59`), the following happens:
 - Thread `i` writes to `i + numThreads * minute`, so that `numThreads * minute` (inclusive) to `numThreads * (minute + 1)` (exclusive) are written to.  
-  They use a `compareAndSet` loop to ensure the memory being overwritten is `SENTINEL`, so that the previous data (if any) was already read.
+  They spin using `compareAndSet` to ensure the memory being overwritten is `SENTINEL`, so that the previous data (if any) was already read.
 - Thread `0`, the designated summarizer, updates the summary. For improved efficiency per minute, it does so throughout the hour:
   - At minute `0`, it initializes the summary.
-  - At minutes `1` to `58`, it updates the summary with the data from the *previous* minute, which is complete by now. It also resets that data to `SENTINEL`.
+  - At minutes `1` to `58` inclusive, it updates the summary with the data from the *previous* minute, which is complete by now (hence it doesn't spin). It also resets that data to `SENTINEL`.
   - At minute `59`, it updates the summary with data from minutes `58` and `59`, and prints the summary. It also resets that data to `SENTINEL`.
 - After the thread's done, it then checks the time and waits for the next minute.
 
@@ -109,7 +109,7 @@ When thread `0` is reading data, it uses a `getAndSet` loop to ensure the data i
 
 Clearly, everything is *safe*: the output is *correct*. Progress is also guaranteed because the only time a thread is waiting on another is at minute `59`, if thread `0` has to wait for the other sensors to record their readings, and they're able to do so because the current value is `SENTINEL` (because that's why thread `0`'s waiting). So, no deadlocks.
 
-That is, the threads are guaranteed to finish their minutely work *eventually*. It's obviously not 100% guaranteed that the threads finish *in time for the next reading*, and there's no way to do so without introducing the possibility of cutting them off in the middle of their individual work, but the distribution of work over time makes finishing on time as likely as reasonably possible.
+That is, the threads are guaranteed to finish their minutely work *eventually*. It's obviously not 100% guaranteed that the threads finish *in time for the next reading*, as nothing can prevent the processors from just taking unreasonably long, but the distribution of work over time makes finishing on time as likely as reasonably possible.
 
 ## Notes
 The implementation uses `SplittableRandom`s for improved concurrency (and predictable readings across threads, if seeded). Note that this doesn't affect problem 1 because only the Minotaur (the main thread) uses randomness.
